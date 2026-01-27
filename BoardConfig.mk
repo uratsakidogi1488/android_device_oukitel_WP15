@@ -101,7 +101,7 @@ TARGET_NO_RECOVERY := true
 TW_HAS_NO_RECOVERY_PARTITION := true
 
 # Workaround for error copying files to recovery ramdisk
-TARGET_COPY_OUT_PRODUCT := product
+TARGET_COPY_OUT_PRODUCT := false
 TARGET_COPY_OUT_VENDOR := vendor
 
 TARGET_USERIMAGES_USE_EXT4 := true
