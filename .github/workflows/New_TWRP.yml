@@ -19,13 +19,10 @@ jobs:
       contents: write
     steps:
 
-    - name: Checkout Repository
-      uses: actions/checkout@master
-
-    - name: Check Out v4
+    - name: Check Out
       uses: actions/checkout@v4
 
-    # Вечная замена удаленному rokibhasansagar
+    # Ручная очистка места
     - name: Cleanup Space
       run: |
         sudo rm -rf /usr/share/dotnet
@@ -49,14 +46,14 @@ jobs:
  
     - name: Install repo
       run: |
-        mkdir ~/bin
+        mkdir -p ~/bin
         curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
         chmod a+x ~/bin/repo
         sudo ln -sf ~/bin/repo /usr/bin/repo
 
     - name: Sync recovery source and device tree
       run: |
-       PATH=~/bin:$PATH
+       export PATH=$HOME/bin:$PATH
        mkdir twrp
        cd twrp
        repo init -u $MANIFEST --depth=1
@@ -75,25 +72,30 @@ jobs:
 
     - name: Build Bootimage
       run: |
-       PATH=~/bin:$PATH
+       export PATH=$HOME/bin:$PATH
        cd twrp
-       export ALLOW_MISSING_DEPENDENCIES=true && source build/envsetup.sh &&lunch twrp_WP15-eng && mka $TARGET -j$(nproc --all)
-       cp  out/target/product/WP15/boot.img    out/target/product/WP15/boot-WP15-A11-$(date +"%Y%m%d").img
-             
-       # Костыль для обнуления аудио-эффектов
+       
+       # Костыль для обнуления аудио-эффектов (ВЫПОЛНЯЕТСЯ ДО СБОРКИ)
        if [ -f hardware/interfaces/audio/effect/all-versions/default/Android.bp ]; then
          echo "" > hardware/interfaces/audio/effect/all-versions/default/Android.bp
        fi
        
-       # Костыль для обнуления субмикса аудио (глушим сборку капризного аудио-модуля)
+       # Костыль для обнуления субмикса аудио (ВЫПОЛНЯЕТСЯ ДО СБОРКИ)
        if [ -f hardware/libhardware/modules/audio_remote_submix/Android.bp ]; then
          echo "" > hardware/libhardware/modules/audio_remote_submix/Android.bp
        fi
        if [ -f hardware/libhardware/modules/audio_remote_submix/Android.mk ]; then
          echo "" > hardware/libhardware/modules/audio_remote_submix/Android.mk
        fi
-       
 
+       # Запуск компиляции
+       export ALLOW_MISSING_DEPENDENCIES=true
+       source build/envsetup.sh
+       lunch twrp_WP15-eng
+       mka $TARGET -j$(nproc --all)
+       
+       # Копирование готового образа
+       cp out/target/product/WP15/boot.img out/target/product/WP15/boot-WP15-A11-$(date +"%Y%m%d").img
   
     - name: Release recovery image
       uses: softprops/action-gh-release@v2
@@ -104,4 +106,4 @@ jobs:
        name: TWRP37x_11_RU
        files: | 
          twrp/out/target/product/WP15/boot*.img
-       
+         
