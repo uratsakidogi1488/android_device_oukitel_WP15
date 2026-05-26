@@ -1,4 +1,4 @@
-TWRP: TWRP
+TWRP: Build TWRP
 
 on:
   workflow_dispatch:
