@@ -82,7 +82,7 @@ jobs:
        swap-size-gb: 12
      
     - name: Clean
-      run: |
+      run: | 
            rm -rf out/target/product/WP15/obj/SHARED_LIBRARIES/libril*
   
     - name: Build TWRP Image
