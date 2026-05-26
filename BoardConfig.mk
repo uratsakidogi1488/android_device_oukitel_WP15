@@ -65,7 +65,7 @@ TW_CRYPTO_REAL_BLKDEV := "/dev/block/by-name/userdata"
 TW_CRYPTO_MNT_POINT := "/data"
 
 # Auto-include dependencies
-TW_RECOVERY_ADDITIONAL_RELINK_LIBRARY_FILES += $(shell find $(DEVICE_PATH)/recovery/root/vendor/lib64/ -name "*.so")
+TW_RECOVERY_ADDITIONAL_RELINK_LIBRARY_FILES += $(shell find $(DEVICE_PATH)/recovery/root/vendor/lib64/ -name "*.so" ! -name "libril.so" ! -name "libprotobuf-c-nano-enable_malloc.so")
 TW_RECOVERY_ADDITIONAL_FILES += $(shell find $(DEVICE_PATH)/recovery/root/vendor/bin/hw/ -name "*")
 
 # TWRP UI & Settings
