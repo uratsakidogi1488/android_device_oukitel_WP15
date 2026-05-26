@@ -1,4 +1,4 @@
-name: Spacce Building TWRP
+TWRP: Spacce TWRP
 
 on:
   workflow_dispatch:
