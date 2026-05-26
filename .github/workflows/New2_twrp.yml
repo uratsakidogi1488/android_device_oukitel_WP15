@@ -1,4 +1,4 @@
-run Building TWRP
+name: Spacce Building TWRP
 
 on:
 #  release:
