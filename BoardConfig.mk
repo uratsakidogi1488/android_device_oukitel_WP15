@@ -59,8 +59,8 @@ TW_CRYPTO_FS_TYPE := "f2fs"
 TW_CRYPTO_REAL_BLKDEV := "/dev/block/by-name/userdata"
 TW_CRYPTO_MNT_POINT := "/data"
 
-TW_RECOVERY_ADDITIONAL_RELINK_LIBRARY_FILES += $(shell find $(DEVICE_PATH)/recovery/root/vendor/lib64/ -name "*.so" ! -name "*ril*" ! -name "*radio*" ! -name "*protobuf*")
-TW_RECOVERY_ADDITIONAL_FILES += $(shell find $(DEVICE_PATH)/recovery/root/vendor/bin/hw/ -name "*keymaster*" -o -name "*gatekeeper*")
+TW_RECOVERY_ADDITIONAL_RELINK_LIBRARY_FILES += $(shell find $(DEVICE_PATH)/recovery/root/system/vendor/lib64/ -name "*.so" ! -name "*ril*" ! -name "*radio*" ! -name "*protobuf*")
+TW_RECOVERY_ADDITIONAL_FILES += $(shell find $(DEVICE_PATH)/recovery/root/system/vendor/bin/hw/ -name "*keymaster*" -o -name "*gatekeeper*")
 
 TW_THEME := portrait_hdpi
 DEVICE_SCREEN_WIDTH := 720
