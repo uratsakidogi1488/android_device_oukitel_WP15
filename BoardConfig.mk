@@ -90,10 +90,8 @@ TW_EXTERNAL_STORAGE_MOUNT_POINT := "external_sd"
 
 # Исключаем лишние модули, которые вызывают ошибки зависимостей
 TW_EXCLUDE_AUDIO := true
-# Отключаем RIL, чтобы он не искал protobuf
-TW_EXCLUDE_RIL := true
-TW_EXCLUDE_LIBRIL := true
-# Полное исключение радио-модуля и всех его зависимостей
+TARGET_EXCLUDE_AUDIO := true
 TW_EXCLUDE_RIL := true
 TARGET_EXCLUDE_RIL := true
-
+TW_EXCLUDE_LIBRIL := true
+TARGET_EXCLUDE_LIBRIL := true
