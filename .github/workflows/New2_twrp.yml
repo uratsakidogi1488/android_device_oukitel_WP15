@@ -79,7 +79,11 @@ jobs:
       uses: pierotofy/set-swap-space@master
       with:
        swap-size-gb: 12
-
+     
+    - name: Clean
+      run: |
+           rm -rf out/target/product/WP15/obj/SHARED_LIBRARIES/libril*
+    
     - name: Build
       run: |
        PATH=~/bin:$PATH
