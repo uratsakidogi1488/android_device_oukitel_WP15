@@ -64,9 +64,11 @@ TW_CRYPTO_FS_TYPE := "f2fs"
 TW_CRYPTO_REAL_BLKDEV := "/dev/block/by-name/userdata"
 TW_CRYPTO_MNT_POINT := "/data"
 
-# Auto-include dependencies
-TW_RECOVERY_ADDITIONAL_RELINK_LIBRARY_FILES += $(shell find $(DEVICE_PATH)/recovery/root/vendor/lib64/ -name "*.so" ! -name "libril.so" ! -name "libprotobuf-c-nano-enable_malloc.so")
-TW_RECOVERY_ADDITIONAL_FILES += $(shell find $(DEVICE_PATH)/recovery/root/vendor/bin/hw/ -name "*")
+# Безопасный поиск библиотек (выкашиваем всё, что связано с радио и RIL)
+TW_RECOVERY_ADDITIONAL_RELINK_LIBRARY_FILES += $(shell find $(DEVICE_PATH)/recovery/root/vendor/lib64/ -name "*.so" ! -name "*ril*" ! -name "*radio*" ! -name "*protobuf*")
+
+# Забираем из bin/hw ТОЛЬКО файлы дешифровки, игнорируя системный мусор
+TW_RECOVERY_ADDITIONAL_FILES += $(shell find $(DEVICE_PATH)/recovery/root/vendor/bin/hw/ -name "*keymaster*" -o -name "*gatekeeper*")
 
 # TWRP UI & Settings
 TW_THEME := portrait_hdpi
