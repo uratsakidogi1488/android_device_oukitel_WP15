@@ -81,7 +81,7 @@ PRODUCT_PACKAGES += \
 # health Hal
 PRODUCT_PACKAGES += \
     android.hardware.health@2.1-impl \
-    android.hardware.health@2.1-service \
+    android.hardware.health@2.1-service
 
 # MTK PlPath Utils
 PRODUCT_PACKAGES += \
