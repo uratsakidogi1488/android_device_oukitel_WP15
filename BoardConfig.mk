@@ -236,3 +236,19 @@ TW_MTP_DEVICE := /dev/mtp_usb
 TW_DEFAULT_EXTERNAL_STORAGE := true
 TARGET_USE_CUSTOM_LUN_FILE_PATH := /config/usb_gadget/g1/functions/mass_storage.usb0/lun.%d/file
 TW_DEVICE_VERSION := OUKITEL WP15_V05_20220527 by alf1488
+
+# --- БЛОК ДЕШИФРОВКИ (FBE) ---
+TW_INCLUDE_CRYPTO := true
+TW_INCLUDE_CRYPTO_FBE := true
+TW_INCLUDE_FBE_METADATA_DECRYPT := true
+
+# Указываем, что нужно подтягивать все библиотеки из vendor
+# Это заставит TWRP собрать все нужные .so автоматически
+TW_RECOVERY_ADDITIONAL_RELINK_LIBRARY_FILES += \
+    $(shell find $(DEVICE_PATH)/recovery/root/vendor/lib64/ -name "*.so")
+
+# Включаем основные сервисы TrustKernel
+TW_RECOVERY_ADDITIONAL_RELINK_FILES += \
+    $(DEVICE_PATH)/recovery/root/vendor/bin/hw/android.hardware.gatekeeper@1.0-service \
+    $(DEVICE_PATH)/recovery/root/vendor/bin/hw/android.hardware.keymaster@4.0-service.trustkernel
+# ------------------------------
