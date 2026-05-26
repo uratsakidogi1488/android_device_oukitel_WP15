@@ -84,17 +84,15 @@ jobs:
       run: |
            rm -rf out/target/product/WP15/obj/SHARED_LIBRARIES/libril*
   
-    - name: Remove Audio HAL Source
+    - name: Build TWRP Image
       run: |
-           rm -rf hardware/interfaces/audio
-    
-    - name: Build
-      run: |
-       PATH=~/bin:$PATH
-       cd twrp
-       export ALLOW_MISSING_DEPENDENCIES=true && source build/envsetup.sh &&lunch twrp_WP15-eng && mka $TARGET -j$(nproc --all)
-       cp  out/target/product/WP15/boot.img    out/target/product/WP15/boot-WP15-A11-$(date +"%Y%m%d").img
-             
+        cd twrp
+        rm -rf hardware/interfaces/audio
+        export ALLOW_MISSING_DEPENDENCIES=true
+        source build/envsetup.sh
+        lunch twrp_WP15-eng
+        mka recoveryimage
+
     - name: Release recovery image
       uses: softprops/action-gh-release@v2
       env:
