@@ -87,3 +87,6 @@ TW_INTERNAL_STORAGE_PATH := "/data/media/0"
 TW_INTERNAL_STORAGE_MOUNT_POINT := "data"
 TW_EXTERNAL_STORAGE_PATH := "/external_sd"
 TW_EXTERNAL_STORAGE_MOUNT_POINT := "external_sd"
+
+# Исключаем лишние модули, которые вызывают ошибки зависимостей
+TW_EXCLUDE_AUDIO := true
