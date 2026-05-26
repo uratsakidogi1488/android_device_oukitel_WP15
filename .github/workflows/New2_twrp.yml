@@ -1,4 +1,4 @@
-name: Building TWRP
+run Building TWRP
 
 on:
 #  release:
@@ -86,13 +86,13 @@ jobs:
   
     - name: Build TWRP Image
       run: |
-        cd twrp
-        # Не удаляем папку целиком, а просто "обнуляем" капризный модуль
-        echo "" > hardware/interfaces/audio/effect/all-versions/default/Android.bp
-        export ALLOW_MISSING_DEPENDENCIES=true
-        source build/envsetup.sh
-        lunch twrp_WP15-eng
-        mka recoveryimage
+           run twrp
+           # Не удаляем папку целиком, а просто "обнуляем" капризный модуль
+           echo "" > hardware/interfaces/audio/effect/all-versions/default/Android.bp
+           export ALLOW_MISSING_DEPENDENCIES=true
+           source build/envsetup.sh
+           lunch twrp_WP15-eng
+           mka recoveryimage
 
 
     - name: Release recovery image
