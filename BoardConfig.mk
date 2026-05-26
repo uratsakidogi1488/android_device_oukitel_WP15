@@ -93,4 +93,7 @@ TW_EXCLUDE_AUDIO := true
 # Отключаем RIL, чтобы он не искал protobuf
 TW_EXCLUDE_RIL := true
 TW_EXCLUDE_LIBRIL := true
+# Полное исключение радио-модуля и всех его зависимостей
+TW_EXCLUDE_RIL := true
+TARGET_EXCLUDE_RIL := true
 
