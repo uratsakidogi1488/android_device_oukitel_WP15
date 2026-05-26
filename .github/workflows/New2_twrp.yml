@@ -112,6 +112,5 @@ jobs:
        files: | 
          twrp/out/target/product/WP15/boot*.img      
   
-    - name: Очистка
-      uses: rokibhasansagar/slimhub_actions@main
+
 
