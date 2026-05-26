@@ -83,6 +83,10 @@ jobs:
     - name: Clean
       run: |
            rm -rf out/target/product/WP15/obj/SHARED_LIBRARIES/libril*
+  
+    - name: Remove Audio HAL Source
+      run: |
+           rm -rf hardware/interfaces/audio
     
     - name: Build
       run: |
