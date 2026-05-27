@@ -19,24 +19,25 @@ jobs:
       contents: write
     steps:
 
-    - name: Check Out
+    - name: Checkout Repository
       uses: actions/checkout@v4
 
-    # Ручная очистка места
-    - name: Cleanup Space
+    - name: Maximize Build Space
       run: |
         sudo rm -rf /usr/share/dotnet
         sudo rm -rf /usr/local/lib/android
         sudo rm -rf /opt/ghc
+        sudo rm -rf /usr/local/share/boost
+        docker image prune --all --force
         sudo apt-get clean
 
     - name: Prepare the environment
       run: |
-       sudo apt update
-       sudo apt -y upgrade
-       sudo apt -y install gperf gcc-multilib gcc-10-multilib g++-multilib g++-10-multilib libc6-dev x11proto-core-dev libx11-dev tree lib32z-dev libgl1-mesa-dev libxml2-utils xsltproc bc ccache lib32readline-dev lib32z1-dev liblz4-tool libsdl1.2-dev libxml2 lzop pngcrush schedtool squashfs-tools imagemagick libbz2-dev lzma ncftp qemu-user-static libstdc++-10-dev python3
-       git config --global user.name "uratsakidogi1488"
-       git config --global user.email "uratsakidogi1488@github.com"
+        sudo apt update
+        sudo apt -y upgrade
+        sudo apt -y install gperf gcc-multilib gcc-10-multilib g++-multilib g++-10-multilib libc6-dev x11proto-core-dev libx11-dev tree lib32z-dev libgl1-mesa-dev libxml2-utils xsltproc bc ccache lib32readline-dev lib32z1-dev liblz4-tool libsdl1.2-dev libxml2 lzop pngcrush schedtool squashfs-tools imagemagick libbz2-dev lzma ncftp qemu-user-static libstdc++-10-dev python3
+        git config --global user.name "uratsakidogi1488"
+        git config --global user.email "uratsakidogi1488@github.com"
         
     - name: Install OpenJDK
       uses: actions/setup-java@v3
@@ -46,64 +47,73 @@ jobs:
  
     - name: Install repo
       run: |
-        mkdir -p ~/bin
+        mkdir ~/bin
         curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
         chmod a+x ~/bin/repo
         sudo ln -sf ~/bin/repo /usr/bin/repo
 
-    - name: Sync recovery source and device tree
+    - name: Sync recovery source
       run: |
-       export PATH=$HOME/bin:$PATH
-       mkdir twrp
-       cd twrp
-       repo init -u $MANIFEST --depth=1
-       repo sync -c -j8 --force-sync --no-clone-bundle --no-tags
-       rm -rf .repo
+        PATH=~/bin:$PATH
+        mkdir twrp
+        cd twrp
+        repo init -u $MANIFEST --depth=1
+        repo sync -c -j8 --force-sync --no-clone-bundle --no-tags
+        rm -rf .repo
              
-    - name: Checkout device tree
-      uses: actions/checkout@v4
-      with:
-       path: twrp/device/oukitel/WP15
+    - name: Clone Device Tree
+      run: |
+        rm -rf twrp/${{ env.DT_PATH }}
+        git clone --depth=1 ${{ env.DT_LINK }} twrp/${{ env.DT_PATH }}
 
     - name: Set Swap Space
       uses: pierotofy/set-swap-space@master
       with:
-       swap-size-gb: 12
+        swap-size-gb: 12
 
     - name: Build Bootimage
       run: |
-       export PATH=$HOME/bin:$PATH
-       cd twrp
-       
-       # Костыль для обнуления аудио-эффектов (ВЫПОЛНЯЕТСЯ ДО СБОРКИ)
-       if [ -f hardware/interfaces/audio/effect/all-versions/default/Android.bp ]; then
-         echo "" > hardware/interfaces/audio/effect/all-versions/default/Android.bp
-       fi
-       
-       # Костыль для обнуления субмикса аудио (ВЫПОЛНЯЕТСЯ ДО СБОРКИ)
-       if [ -f hardware/libhardware/modules/audio_remote_submix/Android.bp ]; then
-         echo "" > hardware/libhardware/modules/audio_remote_submix/Android.bp
-       fi
-       if [ -f hardware/libhardware/modules/audio_remote_submix/Android.mk ]; then
-         echo "" > hardware/libhardware/modules/audio_remote_submix/Android.mk
-       fi
-
-       # Запуск компиляции
-       export ALLOW_MISSING_DEPENDENCIES=true
-       source build/envsetup.sh
-       lunch twrp_WP15-eng
-       mka $TARGET -j$(nproc --all)
-       
-       # Копирование готового образа
-       cp out/target/product/WP15/boot.img out/target/product/WP15/boot-WP15-A11-$(date +"%Y%m%d").img
-  
+        PATH=~/bin:$PATH
+        cd twrp
+        
+        # Костыль для обнуления аудио-эффектов
+        if [ -f hardware/interfaces/audio/effect/all-versions/default/Android.bp ]; then
+          echo "" > hardware/interfaces/audio/effect/all-versions/default/Android.bp
+        fi
+        
+        # Костыль для обнуления субмикса аудио (глушим сборку капризного аудио-модуля)
+        if [ -f hardware/libhardware/modules/audio_remote_submix/Android.bp ]; then
+          echo "" > hardware/libhardware/modules/audio_remote_submix/Android.bp
+        fi
+        if [ -f hardware/libhardware/modules/audio_remote_submix/Android.mk ]; then
+          echo "" > hardware/libhardware/modules/audio_remote_submix/Android.mk
+        fi
+        
+        # === ЖЕСТКИЕ КОСТЫЛИ ПРОТИВ ОТСУТСТВИЯ ПАПОК VENDOR И ROOT ===
+        mkdir -p system/core/rootdir/root
+        mkdir -p system/core/rootdir/vendor
+        mkdir -p ${{ env.DT_PATH }}/recovery/root/vendor
+        mkdir -p ${{ env.DT_PATH }}/root/vendor
+        
+        # Создаем директории превентивно в будущей папке вывода out, чтобы упаковочные скрипты не падали
+        mkdir -p out/target/product/${{ env.DEVICE }}/root/vendor
+        mkdir -p out/target/product/${{ env.DEVICE }}/recovery/root/vendor
+        # =============================================================
+        
+        export ALLOW_MISSING_DEPENDENCIES=true
+        source build/envsetup.sh
+        lunch twrp_${{ env.DEVICE }}-eng
+        mka $TARGET -j$(nproc --all)
+        
+        cp out/target/product/${{ env.DEVICE }}/boot.img out/target/product/${{ env.DEVICE }}/boot-WP15-A11-$(date +"%Y%m%d").img
+             
     - name: Release recovery image
       uses: softprops/action-gh-release@v2
       env:
-       GITHUB_TOKEN: ${{ secrets.TEST }}
+        GITHUB_TOKEN: ${{ secrets.TEST }}
       with:
-       tag_name: Oukitel_WP15_RU_V05
-       name: TWRP37x_11_RU
-       files: | 
-         twrp/out/target/product/WP15/boot*.img
-         
+        tag_name: Oukitel_WP15_RU_V05
+        name: TWRP37x_11_RU
+        files: |
+          twrp/out/target/product/WP15/boot*.img
+          g
