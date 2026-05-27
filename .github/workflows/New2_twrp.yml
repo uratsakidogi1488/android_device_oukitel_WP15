@@ -68,4 +68,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: TWRP-Oukitel-WP15
-        path: twrp/out/target/product/WP15/recovery.img
+        path: twrp/out/target/product/WP15/boot*img
