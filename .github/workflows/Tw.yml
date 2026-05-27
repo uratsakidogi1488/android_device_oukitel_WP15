@@ -97,7 +97,31 @@ jobs:
         rm -rf out/target/product/WP15/recovery/root/vendor 2>/dev/null || true
         rm -rf out/target/product/WP15/root/vendor 2>/dev/null || true
         
-        # МЕНЯЕМ ФЛАГ СБОРКИ НА USERDEBUG ДЛЯ СЖАТИЯ ОБРАЗА
-        export ALLOW_MISSING_DEPENDENCIES=true && source build/envsetup.sh && lunch twrp_WP15-userdebug && mka $TARGET -j$(nproc --all)
+        # ЖЕСТКИЙ ХАК ДЛЯ СЖАТИЯ И ВЫРЕЗАНИЯ ЖИРА ПРЯМО В BoardConfig.mk ДО НАЧАЛА СБОРКИ
+        CONF="device/oukitel/WP15/BoardConfig.mk"
+        if [ -f "$CONF" ]; then
+          echo "Патчим BoardConfig.mk против лишнего веса..."
+          sed -i 's/buildvariant=eng/buildvariant=userdebug/g' "$CONF" || true
+          echo "" >> "$CONF"
+          echo "# Оптимизация размера и компрессии" >> "$CONF"
+          echo "BOARD_RAMDISK_USE_LZMA := true" >> "$CONF"
+          echo "BOARD_RAMDISK_COMPRESSION := lzma" >> "$CONF"
+          echo "TW_EXCLUDE_TWRPAPP := true" >> "$CONF"
+          echo "TW_EXCLUDE_ENCRYPTED_BACKUP := true" >> "$CONF"
+          echo "TW_DEFAULT_LANGUAGE := ru" >> "$CONF"
+        fi
+        
+        # МЕНЯЕМ ФЛАГ СБОРКИ НА USERDEBUG И ЗАПУСКАЕМ С КРОСС-ПРОВЕРКОЙ ИМЕНИ ПРОДУКТА
+        export ALLOW_MISSING_DEPENDENCIES=true
+        export TARGET_BUILD_VARIANT=userdebug
+        source build/envsetup.sh
+        lunch omni_WP15-userdebug || lunch twrp_WP15-userdebug
+        mka $TARGET -j$(nproc --all)
         cp  out/target/product/WP15/boot.img     out/target/product/WP15/boot-WP15-A1
+
+    - name: Upload Boot Image
+      uses: actions/upload-artifact@v4
+      with:
+        name: TWRP-Boot-WP15
+        path: twrp/out/target/product/WP15/boot-WP15-A1
         
