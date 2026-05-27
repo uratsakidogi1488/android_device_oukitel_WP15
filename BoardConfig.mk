@@ -1,4 +1,4 @@
-# Device path
+# Device path 
 DEVICE_PATH := device/oukitel/WP15
 
 # For building with minimal manifest
