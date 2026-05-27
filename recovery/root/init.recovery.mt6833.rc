@@ -1,8 +1,13 @@
+# ======= ОПТИМИЗИРОВАННЫЙ INIT ДЛЯ RECOVERY (MT6833) =======
+# Убрано всё, что связано с криптой, TEE, keymaster, gatekeeper,
+# trustkernel, update_engine, plpath_utils и HAL'ами, которые не нужны в recovery.
+# Оставлено только то, что требуется для корректного монтирования разделов.
+
 on init
     setprop sys.usb.configfs 1
     setprop sys.usb.ffs.aio_compat 1
 
-    # Заранее создаем структуру для монтирования разделов MTK
+on fs
     mkdir /mnt/vendor 0755 system system
     mkdir /mnt/vendor/apd 0771 system system
     mkdir /mnt/vendor/protect_f 0770 system system
@@ -11,8 +16,6 @@ on init
     mkdir /mnt/vendor/nvdata 0771 system system
     mkdir /mnt/vendor/nvcfg 0771 system system
 
-on fs
-    # Монтируем разделы, без которых TrustKernel не отдаст ключи
     mount ext4 /dev/block/by-name/apd /mnt/vendor/apd rw wait
     mount ext4 /dev/block/by-name/protect1 /mnt/vendor/protect_f rw wait
     mount ext4 /dev/block/by-name/protect2 /mnt/vendor/protect_s rw wait
@@ -23,58 +26,21 @@ on fs
     mkdir /mnt/vendor/persist/t6_twrp 0755 system system
     mkdir /mnt/vendor/protect_f/tee_twrp 0755 system system
 
-    # Даем отмашку, что файловая система для TEE готова
-    setprop vendor.trustkernel.ready 1
-
 on post-fs
+    # A/B preloader symlinks (оставлены, т.к. recovery их реально использует)
     wait /dev/block/mmcblk0boot0 2
     symlink /dev/block/sda /dev/block/mmcblk0boot0
     symlink /dev/block/sdb /dev/block/mmcblk0boot1
+
     symlink /dev/block/mmcblk0boot0 /dev/block/platform/bootdevice/by-name/preloader_a
     symlink /dev/block/mmcblk0boot1 /dev/block/platform/bootdevice/by-name/preloader_b
 
-    exec u:r:update_engine:s0 root root -- /system/bin/mtk_plpath_utils
-    start mtk.plpath.utils.link
+    symlink /dev/block/platform/bootdevice/by-name/preloader_a /dev/block/platform/bootdevice/by-name/preloader_emmc_a
+    symlink /dev/block/platform/bootdevice/by-name/preloader_b /dev/block/platform/bootdevice/by-name/preloader_emmc_b
+    symlink /dev/block/platform/bootdevice/by-name/preloader_a /dev/block/platform/bootdevice/by-name/preloader_ufs_a
+    symlink /dev/block/platform/bootdevice/by-name/preloader_b /dev/block/platform/bootdevice/by-name/preloader_ufs_b
 
-on boot
-    start boot-hal-1-2
-    start health-hal-2-1
-
-# --- Сервисы (Services) ---
-
-service keystore_auth /system/bin/keystore_auth
-    oneshot
-    user system
-    group root
-    seclabel u:r:recovery:s0
-
-service mtk.plpath.utils.link /system/bin/mtk_plpath_utils
-    class main
-    user root
-    group root system
-    disabled
-    oneshot
-    seclabel u:r:recovery:s0
-
-service vendor.teed /vendor/bin/teed
-    class core
-    user root
-    group root
-    disabled
-    seclabel u:r:recovery:s0
-
-service vendor.gatekeeper-1-0 /vendor/bin/hw/android.hardware.gatekeeper@1.0-service
-    interface android.hardware.gatekeeper@1.0::IGatekeeper default
-    class hal
-    user root
-    group root
-    disabled
-    seclabel u:r:recovery:s0
-
-service vendor.keymaster-4-0-trustkernel /vendor/bin/hw/android.hardware.keymaster@4.0-service.trustkernel
-    interface android.hardware.keymaster@4.0::IKeymasterDevice default
-    class hal
-    user root
-    group root
-    disabled
-    seclabel u:r:recovery:s0
+    symlink /dev/block/platform/bootdevice/by-name/preloader_a /dev/block/by-name/preloader_emmc_a
+    symlink /dev/block/platform/bootdevice/by-name/preloader_b /dev/block/by-name/preloader_emmc_b
+    symlink /dev/block/platform/bootdevice/by-name/preloader_a /dev/block/by-name/preloader_ufs_a
+    symlink /dev/block/platform/bootdevice/by-name/preloader_b /dev/block/by-name/preloader_ufs_b
