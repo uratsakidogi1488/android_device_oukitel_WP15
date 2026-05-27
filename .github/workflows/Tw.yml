@@ -99,5 +99,5 @@ jobs:
         
         # МЕНЯЕМ ФЛАГ СБОРКИ НА USERDEBUG ДЛЯ СЖАТИЯ ОБРАЗА
         export ALLOW_MISSING_DEPENDENCIES=true && source build/envsetup.sh && lunch twrp_WP15-userdebug && mka $TARGET -j$(nproc --all)
-        cp  out/target/product/WP15/boot.img    out/target/product/WP15/boot-WP15-A1
+        cp  out/target/product/WP15/boot.img     out/target/product/WP15/boot-WP15-A1
         
