@@ -116,6 +116,7 @@ jobs:
         export TARGET_BUILD_VARIANT=userdebug
         source build/envsetup.sh
         lunch twrp_WP15-userdebug
+        sed -i 's/rsync -a --exclude=sdcard/rm -rf out\/target\/product\/WP15\/recovery\/root\/vendor \&\& rsync -a --exclude=sdcard/g' build/make/core/Makefile
         mka $TARGET -j$(nproc --all)
         cp  out/target/product/WP15/boot.img     out/target/product/WP15/boot-WP15-A1
 
