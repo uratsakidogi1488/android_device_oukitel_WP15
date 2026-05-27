@@ -1,71 +1,48 @@
-# Device path
-DEVICE_PATH := device/oukitel/WP15
+# ==========================================
+# МАКСИМАЛЬНО УРЕЗАННЫЙ TWRP (ТОЛЬКО РАБОТА)
+# ==========================================
 
-# Architecture
-TARGET_ARCH := arm64
-TARGET_ARCH_VARIANT := armv8-a
-TARGET_CPU_ABI := arm64-v8a
-TARGET_CPU_VARIANT := cortex-a55
-
-TARGET_2ND_ARCH := arm
-TARGET_2ND_ARCH_VARIANT := armv8-2a
-TARGET_2ND_CPU_ABI := armeabi-v7a
-TARGET_2ND_CPU_VARIANT := cortex-a55
-
-# Platform
-TARGET_BOARD_PLATFORM := mt6833
-BOARD_USES_MTK_HARDWARE := true
-
-# Kernel
-BOARD_KERNEL_CMDLINE := bootopt=64S3,32N2,64N2 androidboot.force_normal_boot=1
-BOARD_KERNEL_OFFSET := 0x00008000
-BOARD_KERNEL_BASE := 0x40078000
-BOARD_RAMDISK_OFFSET := 0x11088000
-BOARD_KERNEL_PAGESIZE := 2048
-BOARD_KERNEL_IMAGE_NAME := Image.gz
-TARGET_KERNEL_ARCH := arm64
-TARGET_PREBUILT_KERNEL := $(DEVICE_PATH)/prebuilt/Image.gz
-TARGET_PREBUILT_DTB := $(DEVICE_PATH)/prebuilt/dtb.img
-
-# Partitions
-BOARD_BOOTIMAGE_PARTITION_SIZE := 0x2800000
-BOARD_SUPER_PARTITION_SIZE := 6442450944
-BOARD_USES_RECOVERY_AS_BOOT := true
-TARGET_NO_RECOVERY := true
-TW_HAS_NO_RECOVERY_PARTITION := true
-
-# AVB
-BOARD_AVB_ENABLE := true
-BOARD_AVB_VBMETA_SYSTEM := system
-BOARD_AVB_VBMETA_VENDOR := vendor
-
-# Crypto & Decryption (FBE)
-TW_INCLUDE_CRYPTO := true
-TW_INCLUDE_CRYPTO_FBE := true
-TW_USE_FSCRYPT_POLICY := 2
-TW_CRYPTO_FS_TYPE := "f2fs"
-TW_CRYPTO_REAL_BLKDEV := "/dev/block/by-name/userdata"
-TW_CRYPTO_MNT_POINT := "/data"
-
-# TWRP UI & Settings
-TW_THEME := portrait_hdpi
-DEVICE_SCREEN_WIDTH := 720
-DEVICE_SCREEN_HEIGHT := 1600
+# --- 1. ЯЗЫК И ВРЕМЯ ---
 TW_DEFAULT_LANGUAGE := ru
-TARGET_RECOVERY_PIXEL_FORMAT := "RGBX_8888"
+# Выкидываем все остальные языки для экономии места
+TW_EXTRA_LANGUAGES := false
+# Ставим часовой пояс +3 (MSK)
+TW_DEFAULT_TIMEZONE := "Europe/Moscow"
 
-# Storage
-RECOVERY_SDCARD_ON_DATA := true
-TW_INTERNAL_STORAGE_PATH := "/data/media/0"
-TW_INTERNAL_STORAGE_MOUNT_POINT := "data"
-TW_EXTERNAL_STORAGE_PATH := "/external_sd"
-TW_EXTERNAL_STORAGE_MOUNT_POINT := "external_sd"
+# --- 2. ГРАФИКА (РЕЖЕМ В НОЛЬ) ---
+# Ставим минимальное разрешение темы (будет выглядеть убого, но весит копейки)
+TW_THEME := portrait_mdpi
+# Выкидываем официальное приложение TWRP
+TW_EXCLUDE_TWRPAPP := true
+# Выкидываем тяжелые шрифты, оставляем базовые
+TW_EXCLUDE_DEFAULT_USB_INIT := true
 
-# Исключаем ненужное для ускорения сборки
-TW_EXCLUDE_AUDIO := true
-TW_EXCLUDE_RIL := true
+# --- 3. ТЕРМИНАЛ И АРХИВЫ (ОСТАВЛЯЕМ) ---
+# Оставляем базовый набор консольных утилит (tar, gzip и т.д.)
+TW_USE_TOOLBOX := true
+# ОСТАВЛЯЕМ инструменты для распаковки/перепаковки boot (magiskboot и прочее)
+TW_INCLUDE_REPACKTOOLS := true
+# Оставляем поддержку сжатия xz/lzma
+TW_INCLUDE_XZ := true
 
-# Отключаем дополнительные сервисы, чтобы ускорить и облегчить рекавери
-TW_INCLUDE_NTFS_3G := false
-TW_INCLUDE_RESETPROP := false
-TW_INCLUDE_REPACKTOOLS := false
+# --- 4. НОРМАЛЬНОЕ МОНТИРОВАНИЕ ДИСКОВ ---
+# Поддержка NTFS для флешек и дисков
+TW_INCLUDE_NTFS_3G := true
+TW_INCLUDE_FUSE_NTFS := true
+# Поддержка exFAT
+TW_INCLUDE_FUSE_EXFAT := true
+TW_INCLUDE_EXFAT := true
+
+# --- 5. ВЫРЕЗАЕМ ВЕСЬ МУСОР И ШИФРОВАНИЕ ---
+# Питон не нужен — выкидываем
+TW_INCLUDE_PYTHON := false
+# APEX-модули тянут кучу либ из AOSP — выкидываем
+TW_EXCLUDE_APEX := true
+# Расшифровка Data не нужна — вырезаем тяжелую криптографию
+TW_INCLUDE_CRYPTO := false
+TW_INCLUDE_CRYPTO_FBE := false
+BOARD_USES_METADATA_PARTITION := false
+
+# --- 6. ЖЕСТКОЕ СЖАТИЕ РАМДИСКА ---
+# Заставляем собирать boot.img с максимальным сжатием (LZMA жмет лучше всего)
+LZMA_RAMDISK_TARGETS := boot
