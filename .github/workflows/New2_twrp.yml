@@ -1,71 +1,113 @@
-name: Build TWRP  
+name: Building TWRP (Bootimage - Target)
 
 on:
   workflow_dispatch:
 
+env:
+  MANIFEST: https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp -b twrp-11
+  DEVICE: WP15
+  TARGET: bootimage
+  # Ставим часовой пояс по Москве
+  TZ: Europe/Moscow
+
 jobs:
   build:
+    if: github.event.repository.owner.id == github.event.sender.id
     runs-on: ubuntu-22.04
     permissions:
       contents: write
-
     steps:
-    - name: Checkout Repository
+
+    # 1. Глубокая очистка места и правильный Swap (8 ГБ)
+    - name: Maximize Build Space
+      uses: easimon/maximize-build-space@master
+      with:
+        root-reserve-mb: 1024
+        swap-size-mb: 8192
+        remove-dotnet: 'true'
+        remove-android: 'true'
+        remove-haskell: 'true'
+        remove-codeql: 'true'
+        remove-docker-images: 'true'
+
+    - name: Check Out
       uses: actions/checkout@v4
 
-    - name: Cleanup and Free Disk Space
-      run: |
-        docker rmi $(docker images -q) || true
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /usr/local/lib/android
-        sudo rm -rf /opt/ghc
-        sudo rm -rf "/usr/local/share/boost"
-        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-        sudo apt-get clean
-
-    - name: Install Build Dependencies
+    - name: Prepare the environment
       run: |
         sudo apt-get update
-        sudo apt-get install -y bc bison build-essential ccache curl flex g++-multilib gcc-multilib git gnupg gperf imagemagick lib32ncurses5-dev lib32readline-dev lib32z1-dev liblz4-tool libncurses5 libncurses5-dev libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev
-
-    - name: Set Up Git Config
-      run: |
+        sudo apt-get -y upgrade
+        sudo apt-get -y install gperf gcc-multilib gcc-10-multilib g++-multilib g++-10-multilib libc6-dev libx11-dev tree lib32z-dev libgl1-mesa-dev libxml2-utils xsltproc bc lib32readline-dev lib32z1-dev liblz4-tool libsdl1.2-dev libxml2 lzop pngcrush schedtool squashfs-tools imagemagick libbz2-dev lzma ncftp qemu-user-static libstdc++-10-dev python3
+        sudo apt-get clean
         git config --global user.name "uratsakidogi1488"
         git config --global user.email "uratsakidogi1488@github.com"
-
-    - name: Initialize Repo and Sync Sources
+        
+    - name: Install OpenJDK
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'zulu'
+        java-version: '8'
+ 
+    - name: Install repo
       run: |
+        mkdir -p ~/bin
+        curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+        chmod a+x ~/bin/repo
+        sudo ln -sf ~/bin/repo /usr/bin/repo
+
+    - name: Sync recovery source
+      run: |
+        export PATH=~/bin:$PATH
         mkdir twrp
         cd twrp
-        # Инициализируем минимальный манифест TWRP 11
-        repo init --depth=1 -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git -b twrp-11
-        # Копируем локальный манифест в нужное место, чтобы подтянуть дерево
-        mkdir -p .repo/local_manifests
-        
-        # Синхронизируем исходники
+        # Качаем исходники TWRP (глубина 1, чтобы не качать гигабайты истории)
+        repo init -u $MANIFEST --depth=1
         repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags
+        # Удаляем папку .repo, это спасет еще около 10-15 ГБ
+        rm -rf .repo
+             
+    - name: Checkout device tree
+      uses: actions/checkout@v4
+      with:
+        repository: uratsakidogi1488/android_device_oukitel_WP15
+        path: twrp/device/oukitel/WP15
 
-    - name: Prepare Device Tree
+    - name: Build Bootimage
       run: |
-        # Копируем твое дерево устройства внутрь синхронизированных исходников
-        mkdir -p twrp/device/oukitel/WP15
-        cp -r * twrp/device/oukitel/WP15/ || true
-
-    - name: Build TWRP Image
-      run: |
+        export PATH=~/bin:$PATH
+        # Отключаем ccache, чтобы не забивать диск
+        export USE_CCACHE=0
         cd twrp
-        # Обезопасим сборку: обнулим капризный аудио-эффект, чтобы компилятор не спотыкался
+       
+        # Костыль для обнуления аудио-эффектов
         if [ -f hardware/interfaces/audio/effect/all-versions/default/Android.bp ]; then
           echo "" > hardware/interfaces/audio/effect/all-versions/default/Android.bp
         fi
         
+        # Костыль для обнуления субмикса аудио
+        if [ -f hardware/libhardware/modules/audio_remote_submix/Android.bp ]; then
+          echo "" > hardware/libhardware/modules/audio_remote_submix/Android.bp
+        fi
+        if [ -f hardware/libhardware/modules/audio_remote_submix/Android.mk ]; then
+          echo "" > hardware/libhardware/modules/audio_remote_submix/Android.mk
+        fi
+
+        # Запуск компиляции
         export ALLOW_MISSING_DEPENDENCIES=true
         source build/envsetup.sh
         lunch twrp_WP15-eng
-        mka recoveryimage -j$(nproc --all)
-
-    - name: Upload Recovery Image
-      uses: actions/upload-artifact@v4
+        mka $TARGET -j$(nproc --all)
+       
+        # Копирование готового образа
+        cp out/target/product/WP15/boot.img out/target/product/WP15/boot-WP15-A11-$(date +"%Y%m%d").img
+  
+    - name: Release recovery image
+      uses: softprops/action-gh-release@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.TEST }}
       with:
-        name: TWRP-Oukitel-WP15
-        path: twrp/out/target/product/WP15/recovery.img
+        tag_name: Oukitel_WP15_RU_V05
+        name: TWRP37x_11_RU
+        files: | 
+          twrp/out/target/product/WP15/boot*.img
+          
