@@ -1,12 +1,9 @@
-# Device path 
+# Device path
 DEVICE_PATH := device/oukitel/WP15
-
-# For building with minimal manifest
-ALLOW_MISSING_DEPENDENCIES := true
 
 # Architecture
 TARGET_ARCH := arm64
-TARGET_ARCH_VARIANT := armv8-2a
+TARGET_ARCH_VARIANT := armv8-a
 TARGET_CPU_ABI := arm64-v8a
 TARGET_CPU_VARIANT := cortex-a55
 
@@ -14,11 +11,6 @@ TARGET_2ND_ARCH := arm
 TARGET_2ND_ARCH_VARIANT := armv8-2a
 TARGET_2ND_CPU_ABI := armeabi-v7a
 TARGET_2ND_CPU_VARIANT := cortex-a55
-
-TARGET_BOARD_SUFFIX := _64
-TARGET_USES_64_BIT_BINDER := true
-TARGET_SUPPORTS_64_BIT_APPS := true
-TARGET_IS_64_BIT := true
 
 # Platform
 TARGET_BOARD_PLATFORM := mt6833
@@ -29,46 +21,28 @@ BOARD_KERNEL_CMDLINE := bootopt=64S3,32N2,64N2 androidboot.force_normal_boot=1
 BOARD_KERNEL_OFFSET := 0x00008000
 BOARD_KERNEL_BASE := 0x40078000
 BOARD_RAMDISK_OFFSET := 0x11088000
-BOARD_KERNEL_SECOND_OFFSET := 0xbff88000
-BOARD_KERNEL_TAGS_OFFSET := 0x07c08000
-BOARD_DTB_OFFSET := 0x07c08000
 BOARD_KERNEL_PAGESIZE := 2048
 BOARD_KERNEL_IMAGE_NAME := Image.gz
 TARGET_KERNEL_ARCH := arm64
 TARGET_PREBUILT_KERNEL := $(DEVICE_PATH)/prebuilt/Image.gz
 TARGET_PREBUILT_DTB := $(DEVICE_PATH)/prebuilt/dtb.img
-BOARD_HASH_TYPE := sha1
-BOARD_BOOTIMG_HEADER_VERSION := 2
-BOARD_FLASH_BLOCK_SIZE := 131072
-BOARD_MKBOOTIMG_ARGS := \
-  --ramdisk_offset $(BOARD_RAMDISK_OFFSET) \
-  --tags_offset $(BOARD_KERNEL_TAGS_OFFSET) \
-  --kernel_offset $(BOARD_KERNEL_OFFSET) \
-  --second_offset $(BOARD_KERNEL_SECOND_OFFSET) \
-  --dtb $(TARGET_PREBUILT_DTB) \
-  --header_version $(BOARD_BOOTIMG_HEADER_VERSION) \
-  --base $(BOARD_KERNEL_BASE) \
-  --pagesize $(BOARD_KERNEL_PAGESIZE) \
-  --dtb_offset $(BOARD_DTB_OFFSET)
 
 # Partitions
 BOARD_BOOTIMAGE_PARTITION_SIZE := 0x2800000
 BOARD_SUPER_PARTITION_SIZE := 6442450944
-BOARD_MAIN_PARTITION_LIST := system vendor odm
 BOARD_USES_RECOVERY_AS_BOOT := true
 TARGET_NO_RECOVERY := true
 TW_HAS_NO_RECOVERY_PARTITION := true
-BOARD_BUILD_SYSTEM_ROOT_IMAGE := false
 
 # AVB
-BOARD_AVB_ENABLE := false
+BOARD_AVB_ENABLE := true
+BOARD_AVB_VBMETA_SYSTEM := system
+BOARD_AVB_VBMETA_VENDOR := vendor
 
 # Crypto & Decryption (FBE)
 TW_INCLUDE_CRYPTO := true
 TW_INCLUDE_CRYPTO_FBE := true
-TW_INCLUDE_FBE_METADATA_DECRYPT := true
 TW_USE_FSCRYPT_POLICY := 2
-TW_PREPARE_DATA_MEDIA_EARLY := true
 TW_CRYPTO_FS_TYPE := "f2fs"
 TW_CRYPTO_REAL_BLKDEV := "/dev/block/by-name/userdata"
 TW_CRYPTO_MNT_POINT := "/data"
@@ -77,11 +51,8 @@ TW_CRYPTO_MNT_POINT := "/data"
 TW_THEME := portrait_hdpi
 DEVICE_SCREEN_WIDTH := 720
 DEVICE_SCREEN_HEIGHT := 1600
-TARGET_RECOVERY_PIXEL_FORMAT := "RGBX_8888"
-TW_BRIGHTNESS_PATH := /sys/class/leds/lcd-backlight/brightness
-TW_MAX_BRIGHTNESS := 255
-TW_DEFAULT_BRIGHTNESS := 100
 TW_DEFAULT_LANGUAGE := ru
+TARGET_RECOVERY_PIXEL_FORMAT := "RGBX_8888"
 
 # Storage
 RECOVERY_SDCARD_ON_DATA := true
@@ -90,19 +61,11 @@ TW_INTERNAL_STORAGE_MOUNT_POINT := "data"
 TW_EXTERNAL_STORAGE_PATH := "/external_sd"
 TW_EXTERNAL_STORAGE_MOUNT_POINT := "external_sd"
 
-# Обрезаем всё лишнее, чтобы не тянуть ненужные сервисы
+# Исключаем ненужное для ускорения сборки
 TW_EXCLUDE_AUDIO := true
-TARGET_EXCLUDE_AUDIO := true
 TW_EXCLUDE_RIL := true
-TARGET_EXCLUDE_RIL := true
-TW_EXCLUDE_LIBRIL := true
-TARGET_EXCLUDE_LIBRIL := true
 
-# Отключаем всё, что не критично и только раздувает образ
+# Отключаем дополнительные сервисы, чтобы ускорить и облегчить рекавери
 TW_INCLUDE_NTFS_3G := false
 TW_INCLUDE_RESETPROP := false
 TW_INCLUDE_REPACKTOOLS := false
-
-# Не тянем автоподхват лишних бинарников и so
-TW_RECOVERY_ADDITIONAL_RELINK_LIBRARY_FILES :=
-TW_RECOVERY_ADDITIONAL_FILES :=
