@@ -1,4 +1,4 @@
-name: Building TWRP
+name: Building TWRP (Bootimage - Target)
 
 on:
   workflow_dispatch:
@@ -19,111 +19,79 @@ jobs:
       contents: write
     steps:
 
-    - name: Checkout Repository
+    - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Cleanup Space
+    - name: Cleanup
       run: |
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /usr/local/lib/android
-        sudo rm -rf /opt/ghc
+        sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
         sudo apt-get clean
 
-    - name: Prepare the environment
+    - name: Prepare
       run: |
-        sudo apt update
-        sudo apt -y upgrade
+        sudo apt update && sudo apt -y upgrade
         sudo apt -y install gperf gcc-multilib gcc-10-multilib g++-multilib g++-10-multilib libc6-dev x11proto-core-dev libx11-dev tree lib32z-dev libgl1-mesa-dev libxml2-utils xsltproc bc ccache lib32readline-dev lib32z1-dev liblz4-tool libsdl1.2-dev libxml2 lzop pngcrush schedtool squashfs-tools imagemagick libbz2-dev lzma ncftp qemu-user-static libstdc++-10-dev python3
         git config --global user.name "uratsakidogi1488"
         git config --global user.email "uratsakidogi1488@github.com"
-        
+
     - name: Install OpenJDK
       uses: actions/setup-java@v4
       with:
         distribution: 'zulu'
         java-version: '8'
- 
-    - name: Install repo
+
+    - name: Repo Init
       run: |
         mkdir ~/bin
         curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
         chmod a+x ~/bin/repo
         sudo ln -sf ~/bin/repo /usr/bin/repo
-
-    - name: Sync recovery source and device tree
-      run: |
-        PATH=~/bin:$PATH
-        mkdir twrp
-        cd twrp
+        mkdir twrp && cd twrp
         repo init -u $MANIFEST --depth=1
         repo sync -c -j8 --force-sync --no-clone-bundle --no-tags
         rm -rf .repo
-             
-    - name: Checkout device tree
+
+    - name: Device Tree
       uses: actions/checkout@v4
       with:
         path: twrp/device/oukitel/WP15
 
-    - name: Set Swap Space
+    - name: Swap
       uses: pierotofy/set-swap-space@master
       with:
         swap-size-gb: 12
 
-    - name: Build Bootimage
+    - name: Build
       run: |
         PATH=~/bin:$PATH
         cd twrp
+        curl -LO https://github.com/TeamWin/android_external_openaes/archive/refs/heads/android-11.zip
+        unzip android-11.zip
+        mkdir -p external/openaes
+        cp -r android_external_openaes-android-11/* external/openaes/
         
-        # ФИКС ОШИБКИ LIBOPENAES: Скачиваем исходники принудительно
-        echo "Филигранно затыкаем дыру в исходниках: качаем OpenAES..."
-        git clone https://github.com/TeamWin/android_external_openaes.git -b android-11 external/openaes
+        echo "" > hardware/interfaces/audio/effect/all-versions/default/Android.bp
+        echo "" > hardware/libhardware/modules/audio_remote_submix/Android.bp
+        echo "" > hardware/libhardware/modules/audio_remote_submix/Android.mk
         
-        # Костыль для обнуления аудио-эффектов
-        if [ -f hardware/interfaces/audio/effect/all-versions/default/Android.bp ]; then
-          echo "" > hardware/interfaces/audio/effect/all-versions/default/Android.bp
-        fi
+        find build/ device/ -type f \( -name "*.mk" -o -name "*.bp" -o -name "Android.mk" -o -name "Makefile" \) -exec sed -i 's/rmdir /rm -rf /g' {} + 2>/dev/null || true
+        rm -rf out/target/product/WP15/recovery/root/vendor out/target/product/WP15/root/vendor 2>/dev/null || true
         
-        # Костыль для обнуления субмикса аудио
-        if [ -f hardware/libhardware/modules/audio_remote_submix/Android.bp ]; then
-          echo "" > hardware/libhardware/modules/audio_remote_submix/Android.bp
-        fi
-        if [ -f hardware/libhardware/modules/audio_remote_submix/Android.mk ]; then
-          echo "" > hardware/libhardware/modules/audio_remote_submix/Android.mk
-        fi
-        
-        # ХАК ПРОТИВ ОШИБКИ "Directory not empty"
-        find build/ -type f \( -name "*.mk" -o -name "*.bp" -o -name "Makefile" \) -exec sed -i 's/rmdir /rm -rf /g' {} + 2>/dev/null || true
-        find device/ -type f \( -name "*.mk" -o -name "*.bp" -o -name "Android.mk" \) -exec sed -i 's/rmdir /rm -rf /g' {} + 2>/dev/null || true
-        rm -rf out/target/product/WP15/recovery/root/vendor 2>/dev/null || true
-        rm -rf out/target/product/WP15/root/vendor 2>/dev/null || true
-        
-        # КРУТИМ СЖАТИЕ НА МАКСИМУМ И СТАВИМ РУССКИЙ ЯЗЫК
         CONF="device/oukitel/WP15/BoardConfig.mk"
-        if [ -f "$CONF" ]; then
-          echo "Патчим BoardConfig.mk против лишнего веса..."
-          sed -i 's/buildvariant=eng/buildvariant=userdebug/g' "$CONF" || true
-          echo "" >> "$CONF"
-          echo "# Оптимизация размера и компрессии" >> "$CONF"
-          echo "BOARD_RAMDISK_COMPRESSION := lzma" >> "$CONF"
-          echo "BOARD_RAMDISK_USE_LZMA := true" >> "$CONF"
-          echo "TW_EXCLUDE_TWRPAPP := true" >> "$CONF"
-          echo "TW_EXCLUDE_ENCRYPTED_BACKUPS := true" >> "$CONF"
-          echo "TW_EXCLUDE_I18N := false" >> "$CONF"
-          echo "TW_DEFAULT_LANGUAGE := ru" >> "$CONF"
-        fi
+        echo "BOARD_RAMDISK_COMPRESSION := lzma" >> "$CONF"
+        echo "BOARD_RAMDISK_USE_LZMA := true" >> "$CONF"
+        echo "TW_EXCLUDE_TWRPAPP := true" >> "$CONF"
+        echo "TW_EXCLUDE_ENCRYPTED_BACKUPS := true" >> "$CONF"
+        echo "TW_DEFAULT_LANGUAGE := ru" >> "$CONF"
         
         export ALLOW_MISSING_DEPENDENCIES=true
-        export TARGET_BUILD_VARIANT=userdebug
         source build/envsetup.sh
         lunch twrp_WP15-userdebug
-        
-        # Фикс rsync косяка сборщика
         sed -i 's/rsync -a --exclude=sdcard/rm -rf out\/target\/product\/WP15\/recovery\/root\/vendor \&\& rsync -a --exclude=sdcard/g' build/make/core/Makefile
-        
         mka $TARGET -j$(nproc --all)
         cp out/target/product/WP15/boot.img out/target/product/WP15/boot-WP15-A1.img
 
-    - name: Upload Boot Image
+    - name: Upload
       uses: actions/upload-artifact@v4
       with:
         name: TWRP-Boot-WP15
