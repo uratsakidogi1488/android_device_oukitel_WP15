@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 env:
-  MANIFEST: https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp -b twrp-11
+  MANIFEST:  https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp -b twrp-11
   DEVICE: WP15
   DT_LINK: https://github.com/uratsakidogi1488/android_device_oukitel_WP15
   DT_PATH: device/oukitel/WP15
