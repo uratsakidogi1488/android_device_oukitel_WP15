@@ -9,7 +9,7 @@ env:
   DT_LINK: https://github.com/uratsakidogi1488/android_device_oukitel_WP15
   DT_PATH: device/oukitel/WP15
   TARGET: bootimage
-  TZ: Asia/manila
+  TZ: Europe/Moscow
 
 jobs:
   build:
@@ -20,12 +20,8 @@ jobs:
     steps:
 
     - name: Checkout Repository
-      uses: actions/checkout@master
-
-    - name: Check Out v4
       uses: actions/checkout@v4
 
-    # Вечная замена удаленному rokibhasansagar
     - name: Cleanup Space
       run: |
         sudo rm -rf /usr/share/dotnet
@@ -42,7 +38,7 @@ jobs:
         git config --global user.email "uratsakidogi1488@github.com"
         
     - name: Install OpenJDK
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@v4
       with:
         distribution: 'zulu'
         java-version: '8'
@@ -83,7 +79,7 @@ jobs:
           echo "" > hardware/interfaces/audio/effect/all-versions/default/Android.bp
         fi
         
-        # Костыль для обнуления субмикса аудио (глушим сборку капризного аудио-модуля)
+        # Костыль для обнуления субмикса аудио
         if [ -f hardware/libhardware/modules/audio_remote_submix/Android.bp ]; then
           echo "" > hardware/libhardware/modules/audio_remote_submix/Android.bp
         fi
@@ -97,32 +93,35 @@ jobs:
         rm -rf out/target/product/WP15/recovery/root/vendor 2>/dev/null || true
         rm -rf out/target/product/WP15/root/vendor 2>/dev/null || true
         
-        # ЖЕСТКИЙ ХАК ДЛЯ СЖАТИЯ И ВЫРЕЗАНИЯ ЖИРА ПРЯМО В BoardConfig.mk ДО НАЧАЛА СБОРКИ
+        # КРУТИМ СЖАТИЕ НА МАКСИМУМ И СТАВИМ РУССКИЙ ЯЗЫК
         CONF="device/oukitel/WP15/BoardConfig.mk"
         if [ -f "$CONF" ]; then
           echo "Патчим BoardConfig.mk против лишнего веса..."
           sed -i 's/buildvariant=eng/buildvariant=userdebug/g' "$CONF" || true
           echo "" >> "$CONF"
           echo "# Оптимизация размера и компрессии" >> "$CONF"
-          echo "BOARD_RAMDISK_USE_LZMA := true" >> "$CONF"
           echo "BOARD_RAMDISK_COMPRESSION := lzma" >> "$CONF"
+          echo "BOARD_RAMDISK_USE_LZMA := true" >> "$CONF"
           echo "TW_EXCLUDE_TWRPAPP := true" >> "$CONF"
-          echo "TW_EXCLUDE_ENCRYPTED_BACKUP := true" >> "$CONF"
+          echo "TW_EXCLUDE_ENCRYPTED_BACKUPS := true" >> "$CONF"
+          echo "TW_EXCLUDE_I18N := false" >> "$CONF"
           echo "TW_DEFAULT_LANGUAGE := ru" >> "$CONF"
         fi
         
-        # МЕНЯЕМ ФЛАГ СБОРКИ НА USERDEBUG И ЗАПУСКАЕМ С КРОСС-ПРОВЕРКОЙ ИМЕНИ ПРОДУКТА
         export ALLOW_MISSING_DEPENDENCIES=true
         export TARGET_BUILD_VARIANT=userdebug
         source build/envsetup.sh
         lunch twrp_WP15-userdebug
+        
+        # Фикс rsync косяка сборщика
         sed -i 's/rsync -a --exclude=sdcard/rm -rf out\/target\/product\/WP15\/recovery\/root\/vendor \&\& rsync -a --exclude=sdcard/g' build/make/core/Makefile
+        
         mka $TARGET -j$(nproc --all)
-        cp  out/target/product/WP15/boot.img     out/target/product/WP15/boot-WP15-A1
+        cp out/target/product/WP15/boot.img out/target/product/WP15/boot-WP15-A1.img
 
     - name: Upload Boot Image
       uses: actions/upload-artifact@v4
       with:
         name: TWRP-Boot-WP15
-        path: twrp/out/target/product/WP15/boot-WP15-A1
+        path: twrp/out/target/product/WP15/boot-WP15-A1.img
         
