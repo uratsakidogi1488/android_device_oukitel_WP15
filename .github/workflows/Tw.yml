@@ -1,4 +1,4 @@
-name: Building TWRP (Bootimage - Target)
+lunchnchme: Building TWRP (Bootimage - Target)
 
 on:
   workflow_dispatch:
@@ -115,7 +115,7 @@ jobs:
         export ALLOW_MISSING_DEPENDENCIES=true
         export TARGET_BUILD_VARIANT=userdebug
         source build/envsetup.sh
-        lunch omni_WP15-userdebug || lunch twrp_WP15-userdebug
+        lunch twrp_WP15-userdebug
         mka $TARGET -j$(nproc --all)
         cp  out/target/product/WP15/boot.img     out/target/product/WP15/boot-WP15-A1
 
