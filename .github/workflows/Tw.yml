@@ -1,4 +1,4 @@
-lunchnchme: Building TWRP (Bootimage - Target)
+name: Building TWRP (Bootimage - Target)
 
 on:
   workflow_dispatch:
